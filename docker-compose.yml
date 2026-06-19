@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Base de Datos
+  db-mysql:
+    image: mysql:8.0
+    container_name: innovatech-db
+    restart: always
+    environment:
+      - MYSQL_DATABASE=innovatech_db
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_USER=${MYSQL_APP_USER}
+      - MYSQL_PASSWORD=${MYSQL_APP_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # Backend Ventas
+  backend-ventas:
+    build:
+      # CRÍTICO: El contexto debe ser la subcarpeta interna donde están el pom.xml y el src
+      context: ./back-Ventas_SpringBoot/Springboot-API-REST
+      dockerfile: ./Dockerfile # Busca el Dockerfile que está una carpeta más arriba
+    container_name: back-ventas
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_ENDPOINT=db-mysql
+      - DB_PORT=3306
+      - DB_NAME=innovatech_db
+      - DB_USERNAME=${MYSQL_APP_USER}
+      - DB_PASSWORD=${MYSQL_APP_PASSWORD}
+    depends_on:
+      - db-mysql
+
+  # Backend Despachos (Asumiendo que tiene la misma estructura)
+  backend-despachos:
+    build:
+      context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+      dockerfile: ./Dockerfile
+    container_name: back-despachos
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_ENDPOINT=db-mysql
+      - DB_PORT=3306
+      - DB_NAME=innovatech_db
+      - DB_USERNAME=${MYSQL_APP_USER}
+      - DB_PASSWORD=${MYSQL_APP_PASSWORD}
+    depends_on:
+      - db-mysql
+
+  # Frontend
+  frontend-app:
+    build:
+      context: ./front_despacho
+      dockerfile: Dockerfile
+    container_name: front-app
+    restart: always
+    ports:
+      - "80:80"
+
+volumes:
+  db_data:
